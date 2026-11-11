@@ -1,1 +1,862 @@
-PLACEHOLDER_FULL_CONTENT_WILL_BE_REPLACED
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雞兔同籠：聯立方程圖解遊戲（教學升級版）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #f0fdf4; }
+        .canvas-container { position: relative; height: 400px; width: 100%; }
+        .tab-btn { transition: all 0.2s ease-in-out; }
+        .tab-btn.active { background-color: #15803d; color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .input-correct { border-color: #22c55e !important; background-color: #f0fdf4 !important; color: #15803d; }
+        .input-incorrect { border-color: #ef4444 !important; background-color: #fef2f2 !important; color: #b91c1c; }
+        .number-input { width: 4rem; padding: 0.375rem 0.5rem; border: 1px solid #d1d5db; border-radius: 0.5rem; text-align: center; font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; transition: all 0.15s; }
+        .number-input:focus { outline: none; border-color: #16a34a; box-shadow: 0 0 0 2px rgba(22,163,74,0.2); }
+        .eq-input { width: 3.2rem; padding: 0.3rem 0.4rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-align: center; font-weight: 700; font-family: ui-monospace, monospace; }
+        .badge { transition: all 0.3s ease; }
+        .badge-locked { filter: grayscale(1); opacity: 0.45; }
+        details summary { cursor: pointer; font-weight: 600; }
+        details summary:hover { color: #15803d; }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen pb-12">
+
+<div class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+
+    <header class="text-center mb-4">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-green-700 mb-2 flex items-center justify-center gap-2">
+            <span>🐔</span> 雞兔同籠：圖解聯立方程 <span>🐰</span>
+        </h1>
+        <p class="text-gray-600 font-medium text-sm sm:text-base">中二數學：體驗二元一次方程的線性特質與圖解法</p>
+    </header>
+
+    <div class="flex flex-wrap justify-center items-center gap-2 mb-6 bg-white py-2.5 px-4 rounded-2xl shadow-sm border border-green-100 max-w-2xl mx-auto">
+        <span class="text-xs font-bold text-gray-500 mr-1">學習成就：</span>
+        <div id="badge-stage1" class="badge badge-locked text-xs bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1 rounded-full font-bold flex items-center gap-1"><span>⭐</span> 第一關：直線探索</div>
+        <div id="badge-stage2" class="badge badge-locked text-xs bg-indigo-50 text-indigo-800 border border-indigo-200 px-3 py-1 rounded-full font-bold flex items-center gap-1"><span>🏆</span> 第二關：交點解聯立</div>
+        <div id="badge-stage3" class="badge badge-locked text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full font-bold flex items-center gap-1"><span>🔍</span> 第三關：判斷解</div>
+        <div id="badge-stage4" class="badge badge-locked text-xs bg-purple-50 text-purple-800 border border-purple-200 px-3 py-1 rounded-full font-bold flex items-center gap-1"><span>📝</span> 第四關：自訂方程</div>
+    </div>
+
+    <details class="mb-6 bg-white rounded-2xl shadow-sm border border-green-100 p-4">
+        <summary class="text-green-800">📘 為什麼圖解法可以解聯立二元一次方程？（點擊展開）</summary>
+        <div class="mt-3 text-sm text-gray-700 leading-relaxed space-y-2 border-t pt-3">
+            <p>• <b>直線的本質：</b>每一個二元一次方程的圖像都是一條直線。直線上每一點都滿足該方程。</p>
+            <p>• <b>聯立方程的解：</b>兩條直線的交點同時滿足兩個方程，因此就是聯立方程的解。</p>
+            <p>• <b>三種情況：</b>兩線相交 → 唯一解；兩線平行 → 無解；兩線重合 → 無限多解。</p>
+            <p>• 在雞兔同籠中，我們只接受<strong>非負整數</strong>的解。</p>
+        </div>
+    </details>
+
+    <nav class="flex flex-wrap justify-center mb-8 bg-green-100/80 p-1.5 rounded-2xl max-w-3xl mx-auto shadow-inner gap-1">
+        <button id="tab-stage1" onclick="switchTab('stage1')" class="tab-btn active flex-1 py-2.5 px-3 rounded-xl font-bold text-sm text-gray-700 text-center">第一關：描畫單一直線</button>
+        <button id="tab-stage2" onclick="switchTab('stage2')" class="tab-btn flex-1 py-2.5 px-3 rounded-xl font-bold text-sm text-gray-700 text-center">第二關：圖解聯立方程</button>
+        <button id="tab-stage3" onclick="switchTab('stage3')" class="tab-btn flex-1 py-2.5 px-3 rounded-xl font-bold text-sm text-gray-700 text-center whitespace-nowrap">第三關：判斷點</button>
+        <button id="tab-stage4" onclick="switchTab('stage4')" class="tab-btn flex-1 py-2.5 px-3 rounded-xl font-bold text-sm text-gray-700 text-center">第四關：自訂方程求解</button>
+    </nav>
+
+    <!-- STAGE 1 -->
+    <section id="stage1" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="lg:col-span-5 space-y-6">
+            <div class="bg-white rounded-2xl shadow-md p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">學習目標 1</span>
+                    <span class="text-sm text-gray-500">二元一次方程是線性的</span>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">任務：建立數據表並描點</h2>
+                <p class="text-sm text-gray-600 leading-relaxed mb-4">
+                    農夫說：「籠子內雞 (x) 和兔 (y) 的<strong>總頭數為 8</strong>。」<br>
+                    方程：<span class="font-bold text-green-700 font-mono text-base">x + y = 8</span>
+                </p>
+                <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-xs text-yellow-800">
+                    💡 先填入你認為正確的 y 值並描點。之後嘗試連線——如果這些點無法連成一條直線，就代表有些數值不滿足方程。
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-md p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2"><span>📊</span> 數據表</h3>
+                    <button onclick="resetStage1()" class="text-xs text-gray-500 hover:text-gray-700 underline">重置本關</button>
+                </div>
+                
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-center border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 border-b">
+                                <th class="p-2 border font-mono text-sm">雞的數量 (x)</th>
+                                <th class="p-2 border font-mono text-sm text-gray-500">0</th>
+                                <th class="p-2 border font-mono text-sm text-gray-500">2</th>
+                                <th class="p-2 border font-mono text-sm text-gray-500">5</th>
+                                <th class="p-2 border font-mono text-sm text-gray-500">8</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="p-2 border font-mono text-sm font-bold bg-gray-50">兔的數量 (y)</td>
+                                <td class="p-1 border"><input type="number" id="s1-y0" min="0" max="10" step="1" class="number-input" placeholder="?" oninput="previewStage1Points()" onfocus="if(this.value==='')this.value=0"></td>
+                                <td class="p-1 border"><input type="number" id="s1-y1" min="0" max="10" step="1" class="number-input" placeholder="?" oninput="previewStage1Points()" onfocus="if(this.value==='')this.value=0"></td>
+                                <td class="p-1 border"><input type="number" id="s1-y2" min="0" max="10" step="1" class="number-input" placeholder="?" oninput="previewStage1Points()" onfocus="if(this.value==='')this.value=0"></td>
+                                <td class="p-1 border"><input type="number" id="s1-y3" min="0" max="10" step="1" class="number-input" placeholder="?" oninput="previewStage1Points()" onfocus="if(this.value==='')this.value=0"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="space-y-3">
+                    <button onclick="plotPointsStage1()" id="s1-btn-plot" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-md flex items-center justify-center gap-2">
+                        <span>📍</span> 第一步：描點
+                    </button>
+                    <button onclick="tryConnectLineStage1()" id="s1-btn-line" disabled class="w-full bg-gray-300 text-gray-500 font-bold py-3 px-4 rounded-xl transition shadow-md flex items-center justify-center gap-2 cursor-not-allowed">
+                        <span>✏️</span> 第二步：嘗試連線
+                    </button>
+                </div>
+                <div id="s1-feedback" class="mt-4 p-4 rounded-xl text-sm hidden"></div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-7 bg-white rounded-2xl shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-2 flex items-center justify-between">
+                <span>📈 坐標平面</span>
+                <span id="s1-chart-status" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">等待輸入數據...</span>
+            </h3>
+            <p class="text-xs text-gray-500 mb-4">先描點，再嘗試連線。只有滿足方程的點才能連成直線。</p>
+            <div class="canvas-container"><canvas id="chartStage1"></canvas></div>
+        </div>
+    </section>
+
+    <!-- STAGE 2 (unchanged core) -->
+    <section id="stage2" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-8 hidden">
+        <div class="lg:col-span-5 space-y-6">
+            <div class="bg-white rounded-2xl shadow-md p-6 border-l-4 border-indigo-500">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">學習目標 2</span>
+                    <span class="text-sm text-gray-500">圖解法求聯立方程解</span>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">任務：找出兩線交點</h2>
+                <p class="text-sm text-gray-600 leading-relaxed mb-2">
+                    1️⃣ 共有 <b>10 個頭</b>：<span class="font-bold text-green-600 font-mono">x + y = 10</span><br>
+                    2️⃣ 共有 <b>28 隻腳</b>：<span class="font-bold text-blue-600 font-mono">2x + 4y = 28</span>
+                </p>
+                <button onclick="showStage2Hint()" id="s2-hint-btn" class="mt-2 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg transition font-medium">💡 顯示解題提示</button>
+                <div id="s2-hint" class="mt-2 text-xs bg-indigo-50 p-3 rounded-lg hidden text-indigo-900 border border-indigo-100"></div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-md p-5 space-y-3">
+                <h3 class="font-bold text-gray-800 text-base"><span class="text-green-700">🟢 直線一：x + y = 10</span></h3>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div class="bg-gray-50 p-2.5 rounded border flex items-center justify-between"><span>x=0 時 y=</span><input type="number" id="s2-l1-y1" min="0" max="15" class="number-input" placeholder="?"></div>
+                    <div class="bg-gray-50 p-2.5 rounded border flex items-center justify-between"><span>x=10 時 y=</span><input type="number" id="s2-l1-y2" min="0" max="15" class="number-input" placeholder="?"></div>
+                </div>
+                <button onclick="plotStage2Line1()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg text-sm">繪畫直線一</button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-md p-5 space-y-3">
+                <h3 class="font-bold text-gray-800 text-base"><span class="text-blue-700">🔵 直線二：2x + 4y = 28</span></h3>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div class="bg-gray-50 p-2.5 rounded border flex items-center justify-between"><span>x=0 時 y=</span><input type="number" id="s2-l2-y1" min="0" max="15" class="number-input" placeholder="?"></div>
+                    <div class="bg-gray-50 p-2.5 rounded border flex items-center justify-between"><span>x=14 時 y=</span><input type="number" id="s2-l2-y2" min="0" max="15" class="number-input" placeholder="?"></div>
+                </div>
+                <button onclick="plotStage2Line2()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm">繪畫直線二</button>
+            </div>
+
+            <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl shadow-md p-5 border border-amber-200">
+                <h3 class="font-bold text-amber-900 text-base mb-2">🎯 從圖中讀取交點：</h3>
+                <div class="flex items-center gap-2 mb-3 text-sm">
+                    <span>(</span><input type="number" id="s2-ans-x" min="0" max="15" class="number-input" placeholder="x">
+                    <span>,</span><input type="number" id="s2-ans-y" min="0" max="15" class="number-input" placeholder="y"><span>)</span>
+                </div>
+                <button onclick="checkStage2Solution()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl text-sm">驗證答案</button>
+                <div id="s2-feedback" class="mt-3 text-sm hidden"></div>
+                <div id="s2-verification" class="mt-3 text-xs bg-white/80 p-3 rounded-lg border border-amber-200 hidden leading-relaxed"></div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-7 space-y-6">
+            <div class="bg-white rounded-2xl shadow-md p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xl font-bold text-gray-800">📈 雙線圖解坐標圖</h3>
+                    <button onclick="resetStage2()" class="text-xs text-gray-500 hover:text-gray-700 underline">重置本關</button>
+                </div>
+                <p class="text-xs text-gray-500 mb-4">答對後會顯示交點，並標示投影到兩軸的虛線。</p>
+                <div class="canvas-container"><canvas id="chartStage2"></canvas></div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-md p-6">
+                <h3 class="font-bold text-gray-800 text-base mb-3 border-b pb-2">🐥 農場驗證檢視</h3>
+                <div id="s2-animal-container" class="min-h-[90px] flex flex-wrap gap-1.5 justify-center items-center p-3 bg-gray-50 rounded-xl">
+                    <span class="text-gray-400 text-sm italic">成功找出交點後，農場小動物就會出現喔！</span>
+                </div>
+                <div id="s2-animal-count" class="text-center text-xs font-bold text-gray-600 mt-2 hidden"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STAGE 3: Points on Line -->
+    <section id="stage3" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-8 hidden">
+        <div class="lg:col-span-5 space-y-6">
+            <div class="bg-white rounded-2xl shadow-md p-6 border-l-4 border-emerald-500">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">學習目標 3</span>
+                    <span class="text-sm text-gray-500">判斷點是否為方程的解</span>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">任務：標註點並判斷</h2>
+                <p class="text-sm text-gray-600 leading-relaxed mb-4">
+                    圖中已畫好一條直線，代表方程 <span class="font-bold text-emerald-700 font-mono">x + y = 8</span>。<br>
+                    請標註幾個點，觀察哪些點落在直線上（即為方程的解），哪些不是。
+                </p>
+                <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-xs text-yellow-800">
+                    💡 提示：如果點在直線上，代入後應滿足 x + y = 8。
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-md p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-lg text-gray-800">標註點</h3>
+                    <button onclick="resetStage3()" class="text-xs text-gray-500 hover:text-gray-700 underline">重置本關</button>
+                </div>
+
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-sm">點坐標 (</span>
+                    <input type="number" id="s3-px" class="number-input" placeholder="x" min="-2" max="12" step="1">
+                    <span class="text-sm">,</span>
+                    <input type="number" id="s3-py" class="number-input" placeholder="y" min="-2" max="12" step="1">
+                    <span class="text-sm">)</span>
+                    <button onclick="addStage3Point()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm">加入點</button>
+                </div>
+
+                <div id="s3-points-list" class="text-xs text-gray-600 mb-4 min-h-[40px]">尚未加入任何點</div>
+
+                <button onclick="checkStage3Points()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition">檢查哪些點在直線上</button>
+
+                <div id="s3-feedback" class="mt-4 p-4 rounded-xl text-sm hidden"></div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-7 bg-white rounded-2xl shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">📈 直線 x + y = 8</h3>
+            <p class="text-xs text-gray-500 mb-4">綠色點 = 在直線上（是解）；紅色點 = 不在直線上（不是解）。</p>
+            <div class="canvas-container"><canvas id="chartStage3"></canvas></div>
+        </div>
+    </section>
+
+    <!-- STAGE 4: Custom Equations -->
+    <section id="stage4" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-8 hidden">
+        <div class="lg:col-span-5 space-y-6">
+            <div class="bg-white rounded-2xl shadow-md p-6 border-l-4 border-purple-500">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">學習目標 4</span>
+                    <span class="text-sm text-gray-500">配合實體工作紙</span>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">自訂兩條二元一次方程</h2>
+                <p class="text-sm text-gray-600 leading-relaxed">
+                    輸入任意兩條方程 <span class="font-mono">ax + by = c</span> 與 <span class="font-mono">dx + ey = f</span>，系統會畫出圖像並計算交點。適合配合工作紙練習不同題目。
+                </p>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-md p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-green-700 mb-2">方程一</label>
+                    <div class="flex items-center gap-1 text-sm flex-wrap">
+                        <input type="number" id="s4-a" class="eq-input" value="1" step="any">
+                        <span>x +</span>
+                        <input type="number" id="s4-b" class="eq-input" value="1" step="any">
+                        <span>y =</span>
+                        <input type="number" id="s4-c" class="eq-input" value="10" step="any">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-blue-700 mb-2">方程二</label>
+                    <div class="flex items-center gap-1 text-sm flex-wrap">
+                        <input type="number" id="s4-d" class="eq-input" value="2" step="any">
+                        <span>x +</span>
+                        <input type="number" id="s4-e" class="eq-input" value="4" step="any">
+                        <span>y =</span>
+                        <input type="number" id="s4-f" class="eq-input" value="28" step="any">
+                    </div>
+                </div>
+
+                <button onclick="plotStage4()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition">繪製圖像並求解</button>
+                <button onclick="resetStage4()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 rounded-xl transition text-sm">重置</button>
+
+                <div id="s4-result" class="mt-2 p-4 rounded-xl text-sm hidden"></div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-7 bg-white rounded-2xl shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">📈 自訂聯立方程圖像</h3>
+            <p class="text-xs text-gray-500 mb-4">綠線為方程一，藍線為方程二。交點即為聯立方程的解。</p>
+            <div class="canvas-container"><canvas id="chartStage4"></canvas></div>
+        </div>
+    </section>
+
+</div>
+
+<script>
+let chart1, chart2, chart3, chart4;
+let stage2HintLevel = 0;
+let stage1Plotted = false;
+let stage1Points = [];
+
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.remove('hidden');
+    document.getElementById('tab-' + tabId).classList.add('active');
+    if (tabId === 'stage1' && chart1) chart1.resize();
+    if (tabId === 'stage2' && chart2) chart2.resize();
+    if (tabId === 'stage3' && chart3) chart3.resize();
+    if (tabId === 'stage4' && chart4) chart4.resize();
+}
+
+function unlockBadge(id) {
+    const b = document.getElementById(id);
+    if (b) b.classList.remove('badge-locked');
+}
+
+// ===== STAGE 1 =====
+function initStage1Chart() {
+    if (chart1) return;
+    const ctx = document.getElementById('chartStage1').getContext('2d');
+    chart1 = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [
+                { label: '數據點', data: [], backgroundColor: 'rgba(239,68,68,1)', pointRadius: 8, pointHoverRadius: 10 },
+                { label: '連線', type: 'line', data: [], borderColor: 'rgba(34,197,94,1)', borderWidth: 3, fill: false, pointRadius: 0, tension: 0 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { tooltip: { callbacks: { label: c => `(${c.parsed.x}, ${c.parsed.y})` } } },
+            scales: {
+                x: { type: 'linear', min: -0.5, max: 10, title: { display: true, text: '雞的數量 (x)', font: { size: 13, weight: 'bold' } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+                y: { min: -0.5, max: 10, title: { display: true, text: '兔的數量 (y)', font: { size: 13, weight: 'bold' } }, grid: { color: 'rgba(0,0,0,0.06)' } }
+            }
+        }
+    });
+}
+
+function previewStage1Points() {
+    if (!chart1) initStage1Chart();
+    const xVals = [0, 2, 5, 8];
+    const points = [];
+    ['s1-y0','s1-y1','s1-y2','s1-y3'].forEach((id, i) => {
+        const v = parseFloat(document.getElementById(id).value);
+        if (!isNaN(v)) points.push({ x: xVals[i], y: v });
+    });
+    chart1.data.datasets[0].data = points;
+    chart1.data.datasets[1].data = [];
+    chart1.update();
+}
+
+function plotPointsStage1() {
+    if (!chart1) initStage1Chart();
+    const xVals = [0, 2, 5, 8];
+    const inputs = ['s1-y0','s1-y1','s1-y2','s1-y3'].map(id => document.getElementById(id));
+    const points = [];
+    let filled = 0;
+    inputs.forEach((input, i) => {
+        input.classList.remove('input-correct', 'input-incorrect');
+        const val = parseFloat(input.value);
+        if (!isNaN(val)) {
+            points.push({ x: xVals[i], y: val });
+            filled++;
+        }
+    });
+
+    if (filled < 2) {
+        alert("請至少填入兩個數值才能描點。");
+        return;
+    }
+
+    stage1Points = points;
+    stage1Plotted = true;
+    chart1.data.datasets[0].data = points;
+    chart1.data.datasets[1].data = [];
+    chart1.update();
+
+    const lineBtn = document.getElementById('s1-btn-line');
+    lineBtn.disabled = false;
+    lineBtn.className = "w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-md flex items-center justify-center gap-2";
+
+    document.getElementById('s1-chart-status').textContent = "點已描出，可嘗試連線";
+    document.getElementById('s1-chart-status').className = "text-xs bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full";
+    document.getElementById('s1-feedback').classList.add('hidden');
+}
+
+function arePointsCollinear(points) {
+    if (points.length < 3) return true;
+    const [p1, p2, ...rest] = points;
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    for (const p of rest) {
+        const cross = (p.x - p1.x) * dy - (p.y - p1.y) * dx;
+        if (Math.abs(cross) > 0.01) return false;
+    }
+    return true;
+}
+
+function tryConnectLineStage1() {
+    if (!stage1Plotted || stage1Points.length < 2) return;
+    const feedback = document.getElementById('s1-feedback');
+    const status = document.getElementById('s1-chart-status');
+
+    if (arePointsCollinear(stage1Points)) {
+        // Sort by x for clean line
+        const sorted = [...stage1Points].sort((a, b) => a.x - b.x);
+        chart1.data.datasets[1].data = sorted;
+        chart1.update();
+
+        // Check if they match the true equation y = 8 - x
+        const correct = stage1Points.every(p => Math.abs(p.y - (8 - p.x)) < 0.01);
+        if (correct) {
+            feedback.className = "mt-4 p-4 rounded-xl text-sm bg-green-100 text-green-900 border border-green-300";
+            feedback.innerHTML = "🎉 太棒了！這些點完美連成一條直線，而且全部滿足 x + y = 8。這證明了二元一次方程的圖像是直線。";
+            status.textContent = "✅ 成功連成直線！";
+            status.className = "text-xs bg-green-100 text-green-800 font-bold px-3 py-1 rounded-full";
+            unlockBadge('badge-stage1');
+        } else {
+            feedback.className = "mt-4 p-4 rounded-xl text-sm bg-amber-100 text-amber-900 border border-amber-300";
+            feedback.innerHTML = "⚠️ 這些點可以連成直線，但並不完全滿足 x + y = 8。請再檢查每個 y 是否等於 8 − x。";
+            status.textContent = "連成直線，但數值不正確";
+            status.className = "text-xs bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full";
+        }
+    } else {
+        chart1.data.datasets[1].data = [];
+        chart1.update();
+        feedback.className = "mt-4 p-4 rounded-xl text-sm bg-red-100 text-red-900 border border-red-300";
+        feedback.innerHTML = "❌ 這些點無法連成一條直線！代表有些 (x, y) 並不滿足方程 x + y = 8。請重新計算 y = 8 − x。";
+        status.textContent = "無法連成直線";
+        status.className = "text-xs bg-red-100 text-red-800 font-bold px-3 py-1 rounded-full";
+    }
+    feedback.classList.remove('hidden');
+}
+
+function resetStage1() {
+    stage1Plotted = false;
+    stage1Points = [];
+    ['s1-y0','s1-y1','s1-y2','s1-y3'].forEach(id => {
+        const el = document.getElementById(id);
+        el.value = '';
+        el.classList.remove('input-correct', 'input-incorrect');
+    });
+    document.getElementById('s1-feedback').classList.add('hidden');
+    document.getElementById('s1-chart-status').textContent = "等待輸入數據...";
+    document.getElementById('s1-chart-status').className = "text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full";
+    const lineBtn = document.getElementById('s1-btn-line');
+    lineBtn.disabled = true;
+    lineBtn.className = "w-full bg-gray-300 text-gray-500 font-bold py-3 px-4 rounded-xl transition shadow-md flex items-center justify-center gap-2 cursor-not-allowed";
+    if (chart1) {
+        chart1.data.datasets[0].data = [];
+        chart1.data.datasets[1].data = [];
+        chart1.update();
+    }
+}
+
+// ===== STAGE 2 =====
+let stage2Line1Drawn = false, stage2Line2Drawn = false;
+
+function initStage2Chart() {
+    if (chart2) return;
+    const ctx = document.getElementById('chartStage2').getContext('2d');
+    chart2 = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: [
+                { label: '直線一: x + y = 10', data: [], borderColor: 'rgba(34,197,94,1)', borderWidth: 3, fill: false, pointRadius: 0 },
+                { label: '直線二: 2x + 4y = 28', data: [], borderColor: 'rgba(59,130,246,1)', borderWidth: 3, fill: false, pointRadius: 0 },
+                { label: '交點', type: 'scatter', data: [], backgroundColor: 'rgba(217,119,6,1)', pointRadius: 10, pointStyle: 'star' },
+                { label: '投影虛線', data: [], borderColor: 'rgba(217,119,6,0.6)', borderWidth: 2, borderDash: [6,4], fill: false, pointRadius: 0 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { tooltip: { callbacks: { label: c => `(${c.parsed.x}, ${c.parsed.y})` } } },
+            scales: {
+                x: { type: 'linear', min: -0.5, max: 16, title: { display: true, text: '雞的數量 (x)', font: { size: 13, weight: 'bold' } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+                y: { min: -0.5, max: 12, title: { display: true, text: '兔的數量 (y)', font: { size: 13, weight: 'bold' } }, grid: { color: 'rgba(0,0,0,06)' } }
+            }
+        }
+    });
+}
+
+function showStage2Hint() {
+    const hint = document.getElementById('s2-hint');
+    const btn = document.getElementById('s2-hint-btn');
+    stage2HintLevel++;
+    if (stage2HintLevel === 1) {
+        hint.innerHTML = "<b>第一次提示：</b>直線一：x=0 → y=10；x=10 → y=0。<br>直線二可先兩邊除以 2，得到 x + 2y = 14。";
+        hint.classList.remove('hidden');
+        btn.textContent = "💡 再顯示更詳細提示";
+    } else if (stage2HintLevel >= 2) {
+        hint.innerHTML = "<b>第二次提示：</b>直線二：x=0 → y=7；y=0 → x=14。<br>交點約在 (6, 4) 附近，可從圖中讀取。";
+        btn.disabled = true;
+        btn.classList.add('opacity-50');
+    }
+}
+
+function plotStage2Line1() {
+    const y1 = parseInt(document.getElementById('s2-l1-y1').value);
+    const y2 = parseInt(document.getElementById('s2-l1-y2').value);
+    const e1 = document.getElementById('s2-l1-y1'), e2 = document.getElementById('s2-l1-y2');
+    e1.classList.remove('input-correct','input-incorrect');
+    e2.classList.remove('input-correct','input-incorrect');
+    if (y1 === 10 && y2 === 0) {
+        if (!chart2) initStage2Chart();
+        chart2.data.datasets[0].data = [{x:0,y:10},{x:10,y:0}];
+        chart2.update();
+        stage2Line1Drawn = true;
+        e1.classList.add('input-correct');
+        e2.classList.add('input-correct');
+    } else {
+        e1.classList.add('input-incorrect');
+        e2.classList.add('input-incorrect');
+        alert("直線一計算有誤，請再確認。");
+    }
+}
+
+function plotStage2Line2() {
+    const y1 = parseInt(document.getElementById('s2-l2-y1').value);
+    const y2 = parseInt(document.getElementById('s2-l2-y2').value);
+    const e1 = document.getElementById('s2-l2-y1'), e2 = document.getElementById('s2-l2-y2');
+    e1.classList.remove('input-correct','input-incorrect');
+    e2.classList.remove('input-correct','input-incorrect');
+    if (y1 === 7 && y2 === 0) {
+        if (!chart2) initStage2Chart();
+        chart2.data.datasets[1].data = [{x:0,y:7},{x:14,y:0}];
+        chart2.update();
+        stage2Line2Drawn = true;
+        e1.classList.add('input-correct');
+        e2.classList.add('input-correct');
+    } else {
+        e1.classList.add('input-incorrect');
+        e2.classList.add('input-incorrect');
+        alert("直線二計算有誤。可先把方程兩邊除以 2。");
+    }
+}
+
+function checkStage2Solution() {
+    const ansX = parseInt(document.getElementById('s2-ans-x').value);
+    const ansY = parseInt(document.getElementById('s2-ans-y').value);
+    const feedback = document.getElementById('s2-feedback');
+    const verification = document.getElementById('s2-verification');
+
+    if (!stage2Line1Drawn || !stage2Line2Drawn) {
+        feedback.className = "mt-3 text-sm p-3 rounded bg-amber-100 text-amber-900";
+        feedback.textContent = "請先成功繪畫出兩條直線！";
+        feedback.classList.remove('hidden');
+        return;
+    }
+
+    if (ansX === 6 && ansY === 4) {
+        if (!chart2) initStage2Chart();
+        chart2.data.datasets[2].data = [{x:6, y:4}];
+        chart2.data.datasets[3].data = [{x:6, y:0}, {x:6, y:4}, {x:0, y:4}];
+        chart2.update();
+
+        feedback.className = "mt-3 text-sm p-3 rounded bg-green-100 text-green-900 font-bold";
+        feedback.innerHTML = "🎉 太棒了！交點 (6, 4) 代表籠子裡有 <b>6 隻雞</b> 和 <b>4 隻兔</b>！";
+        feedback.classList.remove('hidden');
+
+        verification.innerHTML = `<b>代入驗證：</b><br>頭數：6 + 4 = 10 ✅<br>腳數：2×6 + 4×4 = 12 + 16 = 28 ✅<br>兩個方程同時成立。`;
+        verification.classList.remove('hidden');
+
+        renderStage2Animals(6, 4);
+        unlockBadge('badge-stage2');
+    } else {
+        feedback.className = "mt-3 text-sm p-3 rounded bg-red-100 text-red-900";
+        feedback.textContent = "❌ 請再仔細觀察圖中兩線相交的位置，讀取對應的 x 與 y 值。";
+        feedback.classList.remove('hidden');
+        verification.classList.add('hidden');
+    }
+}
+
+function renderStage2Animals(chickens, rabbits) {
+    const container = document.getElementById('s2-animal-container');
+    const countEl = document.getElementById('s2-animal-count');
+    container.innerHTML = '';
+    const maxShow = 20;
+    for (let i = 0; i < Math.min(chickens, maxShow); i++) container.innerHTML += '<span class="text-2xl">🐔</span>';
+    for (let i = 0; i < Math.min(rabbits, maxShow); i++) container.innerHTML += '<span class="text-2xl">🐰</span>';
+    countEl.textContent = `共 ${chickens} 隻雞 + ${rabbits} 隻兔`;
+    countEl.classList.remove('hidden');
+}
+
+function resetStage2() {
+    stage2Line1Drawn = stage2Line2Drawn = false;
+    stage2HintLevel = 0;
+    ['s2-l1-y1','s2-l1-y2','s2-l2-y1','s2-l2-y2','s2-ans-x','s2-ans-y'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.value = ''; el.classList.remove('input-correct','input-incorrect'); }
+    });
+    document.getElementById('s2-feedback').classList.add('hidden');
+    document.getElementById('s2-verification').classList.add('hidden');
+    document.getElementById('s2-hint').classList.add('hidden');
+    const btn = document.getElementById('s2-hint-btn');
+    btn.textContent = "💡 顯示解題提示";
+    btn.disabled = false;
+    btn.classList.remove('opacity-50');
+    document.getElementById('s2-animal-container').innerHTML = '<span class="text-gray-400 text-sm italic">成功找出交點後，農場小動物就會出現喔！</span>';
+    document.getElementById('s2-animal-count').classList.add('hidden');
+    if (chart2) {
+        chart2.data.datasets.forEach(ds => ds.data = []);
+        chart2.update();
+    }
+}
+
+// ===== STAGE 3 =====
+
+// ===== STAGE 3 =====
+let stage3Points = [];
+
+function initStage3Chart() {
+    if (chart3) return;
+    const ctx = document.getElementById('chartStage3').getContext('2d');
+    chart3 = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: [
+                {
+                    label: '直線 x + y = 8',
+                    data: [{x: -1, y: 9}, {x: 9, y: -1}],
+                    borderColor: 'rgba(34,197,94,1)',
+                    borderWidth: 3,
+                    fill: false,
+                    pointRadius: 0
+                },
+                {
+                    label: '標註的點',
+                    type: 'scatter',
+                    data: [],
+                    backgroundColor: 'rgba(100,100,100,0.8)',
+                    pointBackgroundColor: 'rgba(100,100,100,0.8)',
+                    pointRadius: 8,
+                    pointHoverRadius: 10,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `(${ctx.parsed.x}, ${ctx.parsed.y})`
+                    }
+                }
+            },
+            scales: {
+                x: { type: 'linear', min: -2, max: 10, title: { display: true, text: 'x', font: { size: 13, weight: 'bold' } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+                y: { min: -2, max: 10, title: { display: true, text: 'y', font: { size: 13, weight: 'bold' } }, grid: { color: 'rgba(0,0,0,0.06)' } }
+            }
+        }
+    });
+}
+
+function addStage3Point() {
+    if (!chart3) initStage3Chart();
+    const x = parseFloat(document.getElementById('s3-px').value);
+    const y = parseFloat(document.getElementById('s3-py').value);
+    if (isNaN(x) || isNaN(y)) {
+        alert("請輸入有效的 x 與 y 數值。");
+        return;
+    }
+    stage3Points.push({x, y});
+    updateStage3Chart();
+    document.getElementById('s3-px').value = '';
+    document.getElementById('s3-py').value = '';
+    document.getElementById('s3-feedback').classList.add('hidden');
+}
+
+function updateStage3Chart() {
+    chart3.data.datasets[1].data = stage3Points;
+    const gray = stage3Points.map(() => 'rgba(100,100,100,0.8)');
+    chart3.data.datasets[1].backgroundColor = gray;
+    chart3.data.datasets[1].pointBackgroundColor = gray;
+    chart3.update();
+    const list = document.getElementById('s3-points-list');
+    if (stage3Points.length === 0) {
+        list.textContent = '尚未加入任何點';
+    } else {
+        list.innerHTML = stage3Points.map((p, i) => `點${i+1}: (${p.x}, ${p.y})`).join('<br>');
+    }
+}
+
+function checkStage3Points() {
+    if (stage3Points.length === 0) {
+        alert("請先加入至少一個點。");
+        return;
+    }
+    const colors = stage3Points.map(p => {
+        const onLine = Math.abs(p.x + p.y - 8) < 0.05;
+        return onLine ? 'rgba(34,197,94,1)' : 'rgba(239,68,68,1)';
+    });
+    chart3.data.datasets[1].backgroundColor = colors;
+    chart3.data.datasets[1].pointBackgroundColor = colors;
+    chart3.update();
+
+    const onLineCount = colors.filter(c => c.includes('34,197,94')).length;
+    const feedback = document.getElementById('s3-feedback');
+    feedback.className = "mt-4 p-4 rounded-xl text-sm bg-emerald-50 text-emerald-900 border border-emerald-200";
+    feedback.innerHTML = `檢查完成！共有 <b>${onLineCount}</b> 個點在直線上（是方程 x + y = 8 的解），<b>${stage3Points.length - onLineCount}</b> 個點不在直線上。`;
+    feedback.classList.remove('hidden');
+
+    if (onLineCount > 0 && stage3Points.length >= 2) {
+        unlockBadge('badge-stage3');
+    }
+}
+
+function resetStage3() {
+    stage3Points = [];
+    if (chart3) {
+        chart3.data.datasets[1].data = [];
+        chart3.update();
+    }
+    document.getElementById('s3-points-list').textContent = '尚未加入任何點';
+    document.getElementById('s3-feedback').classList.add('hidden');
+    document.getElementById('s3-px').value = '';
+    document.getElementById('s3-py').value = '';
+}
+
+// ===== STAGE 4 =====
+function initStage4Chart() {
+    if (chart4) return;
+    const ctx = document.getElementById('chartStage4').getContext('2d');
+    chart4 = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: [
+                { label: '方程一', borderColor: 'rgba(34,197,94,1)', borderWidth: 3, data: [], pointRadius: 0 },
+                { label: '方程二', borderColor: 'rgba(59,130,246,1)', borderWidth: 3, data: [], pointRadius: 0 },
+                { label: '交點', type: 'scatter', backgroundColor: 'rgba(168,85,247,1)', pointRadius: 10, data: [], pointStyle: 'star' }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { tooltip: { callbacks: { label: c => `(${c.parsed.x.toFixed(2)}, ${c.parsed.y.toFixed(2)})` } } },
+            scales: {
+                x: { type: 'linear', title: { display: true, text: 'x', font: { size: 13, weight: 'bold' } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+                y: { title: { display: true, text: 'y', font: { size: 13, weight: 'bold' } }, grid: { color: 'rgba(0,0,0,0.06)' } }
+            }
+        }
+    });
+}
+
+function plotStage4() {
+    if (!chart4) initStage4Chart();
+    const a = parseFloat(document.getElementById('s4-a').value);
+    const b = parseFloat(document.getElementById('s4-b').value);
+    const c = parseFloat(document.getElementById('s4-c').value);
+    const d = parseFloat(document.getElementById('s4-d').value);
+    const e = parseFloat(document.getElementById('s4-e').value);
+    const f = parseFloat(document.getElementById('s4-f').value);
+
+    if ([a,b,c,d,e,f].some(isNaN)) {
+        alert("請完整輸入兩條方程的所有係數。");
+        return;
+    }
+
+    const det = a * e - b * d;
+    const resultEl = document.getElementById('s4-result');
+    let intersection = null;
+    let viewMinX = -15, viewMaxX = 15, viewMinY = -15, viewMaxY = 15;
+
+    if (Math.abs(det) < 1e-6) {
+        // parallel or coincident
+        const ratio = Math.abs(a) > 1e-6 ? d / a : (Math.abs(b) > 1e-6 ? e / b : 0);
+        const isCoincident = Math.abs(c * ratio - f) < 1e-6;
+        chart4.data.datasets[2].data = [];
+        if (isCoincident) {
+            resultEl.className = "mt-2 p-4 rounded-xl text-sm bg-blue-100 text-blue-900 border border-blue-300";
+            resultEl.innerHTML = "<b>兩線重合（無限多解）</b><br>兩條方程本質相同，直線完全重疊。";
+        } else {
+            resultEl.className = "mt-2 p-4 rounded-xl text-sm bg-amber-100 text-amber-900 border border-amber-300";
+            resultEl.innerHTML = "<b>兩線平行（無解）</b><br>兩條直線平行，沒有交點，聯立方程無解。";
+        }
+    } else {
+        const x = (c * e - b * f) / det;
+        const y = (a * f - c * d) / det;
+        intersection = {x, y};
+        chart4.data.datasets[2].data = [intersection];
+
+        // Determine view range that comfortably includes the intersection
+        const pad = Math.max(Math.abs(x), Math.abs(y), 8) * 0.4 + 5;
+        viewMinX = Math.min(x - pad, -10);
+        viewMaxX = Math.max(x + pad, 10);
+        viewMinY = Math.min(y - pad, -10);
+        viewMaxY = Math.max(y + pad, 10);
+
+        resultEl.className = "mt-2 p-4 rounded-xl text-sm bg-green-100 text-green-900 border border-green-300";
+        resultEl.innerHTML = `<b>找到唯一解！</b><br>交點坐標：<b>(${x.toFixed(2)}, ${y.toFixed(2)})</b><br>即 x = ${x.toFixed(2)}，y = ${y.toFixed(2)}。`;
+        unlockBadge('badge-stage4');
+    }
+
+    // Generate line points that cover the current view range
+    function getLinePoints(A, B, C, minX, maxX) {
+        const pts = [];
+        if (Math.abs(B) < 1e-6) {
+            // vertical line
+            if (Math.abs(A) > 1e-6) {
+                const x = C / A;
+                const ySpan = Math.max(Math.abs(viewMinY), Math.abs(viewMaxY)) * 1.2 || 20;
+                pts.push({x, y: -ySpan}, {x, y: ySpan});
+            }
+        } else {
+            const step = (maxX - minX) / 12 || 1;
+            for (let x = minX; x <= maxX + 1e-6; x += step) {
+                const y = (C - A * x) / B;
+                pts.push({x, y});
+            }
+        }
+        return pts;
+    }
+
+    const line1 = getLinePoints(a, b, c, viewMinX, viewMaxX);
+    const line2 = getLinePoints(d, e, f, viewMinX, viewMaxX);
+
+    chart4.data.datasets[0].data = line1;
+    chart4.data.datasets[1].data = line2;
+
+    // Apply scales
+    chart4.options.scales.x.min = viewMinX;
+    chart4.options.scales.x.max = viewMaxX;
+    chart4.options.scales.y.min = viewMinY;
+    chart4.options.scales.y.max = viewMaxY;
+
+    resultEl.classList.remove('hidden');
+    chart4.update();
+}
+
+function resetStage4() {
+    document.getElementById('s4-a').value = 1;
+    document.getElementById('s4-b').value = 1;
+    document.getElementById('s4-c').value = 10;
+    document.getElementById('s4-d').value = 2;
+    document.getElementById('s4-e').value = 4;
+    document.getElementById('s4-f').value = 28;
+    document.getElementById('s4-result').classList.add('hidden');
+    if (chart4) {
+        chart4.data.datasets.forEach(ds => ds.data = []);
+        chart4.update();
+    }
+}
+
+function initAll() {
+    initStage1Chart();
+    initStage2Chart();
+    initStage3Chart();
+    initStage4Chart();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll);
+} else {
+    initAll();
+}
+</script>
+</body>
+</html>
